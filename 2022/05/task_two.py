@@ -18,8 +18,11 @@ for line in open(sys.argv[1]).readlines():
         what = int(parts[1])
         fr = int(parts[3]) - 1
         to = int(parts[5])- 1
-        for crate in range(what):
-            item = stacks[fr].pop(0)
+        moves = list(range(what))
+        moves.reverse()
+        print(moves)
+        for crate in moves:
+            item = stacks[fr].pop(crate)
             stacks[to].insert(0,item)
         #sys.exit()
         continue
