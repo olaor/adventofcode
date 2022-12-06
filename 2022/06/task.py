@@ -19,13 +19,12 @@ for c in line:
     test = {}
     for x in buffer:
         test[x] = True
-    print(test)
     if len(test.keys()) == uniques:
         result = i
         break
 
     
-print("Solution part one:")
+print("Solution with %s unique letters:" % uniques)
 print(result)
 #print("Solution part two:")
 #print(partials)
