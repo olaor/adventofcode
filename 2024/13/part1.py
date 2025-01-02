@@ -1,112 +1,70 @@
-#!/usr/bin/env python3
 """
-Made by ChatGPT - ElfOffTheShelf
-Date: June 17, 2024
-
-Day 13: Claw Contraption
-
-This program calculates the minimal token cost to win prizes from claw machines
-given movement constraints. It reads input from a file specified by the -f parameter.
+Made by ChatGPT
+Date: 2025-01-02
 """
 
 import argparse
 import re
+from itertools import product
+from math import inf
 
-def parse_input(filename):
+def parse_input(file_path):
     """
-    Parses the input file to extract button movements and prize positions.
-
-    Args:
-        filename (str): Path to the input file.
-    
-    Returns:
-        list: A list of dictionaries containing button and prize data.
+    Parse the input file to extract the button configurations and prize positions.
     """
     machines = []
-    with open(filename, 'r') as file:
-        lines = file.readlines()
-
-    pattern_a = r"Button A: X\+(\d+), Y\+(\d+)"
-    pattern_b = r"Button B: X\+(\d+), Y\+(\d+)"
-    pattern_prize = r"Prize: X=(\d+), Y=(\d+)"
-
-    i = 0
-    while i < len(lines):
-        if match_a := re.search(pattern_a, lines[i]):
-            a_x, a_y = map(int, match_a.groups())
-            if match_b := re.search(pattern_b, lines[i+1]):
-                b_x, b_y = map(int, match_b.groups())
-                if match_prize := re.search(pattern_prize, lines[i+2]):
-                    prize_x, prize_y = map(int, match_prize.groups())
-                    machines.append({
-                        "A": (a_x, a_y),
-                        "B": (b_x, b_y),
-                        "Prize": (prize_x, prize_y)
-                    })
-        i += 3
+    with open(file_path, 'r') as f:
+        data = f.read()
+        machine_data = data.strip().split("\n\n")
+        for machine in machine_data:
+            match = re.findall(r"X\+(\d+), Y\+(\d+)|X=(\d+), Y=(\d+)", machine)
+            if match:
+                a_button = tuple(map(int, match[0][:2]))
+                b_button = tuple(map(int, match[1][:2]))
+                prize = tuple(map(int, match[2][2:]))
+                machines.append((a_button, b_button, prize))
     return machines
 
-def solve_machine(a_move, b_move, prize):
+def solve_machine(a_button, b_button, prize, max_presses=100):
     """
-    Solves for the minimum cost to align the claw to the prize position.
-
-    Args:
-        a_move (tuple): (x, y) movement for button A.
-        b_move (tuple): (x, y) movement for button B.
-        prize (tuple): Target (x, y) prize position.
-
-    Returns:
-        int: Minimum token cost if possible, else None.
+    Solve for a single machine to find the minimum tokens required to win the prize.
     """
-    max_presses = 100
-    a_x, a_y = a_move
-    b_x, b_y = b_move
+    a_x, a_y = a_button
+    b_x, b_y = b_button
     target_x, target_y = prize
+    min_tokens = inf
 
-    min_cost = float('inf')
-    
-    for a_presses in range(max_presses + 1):
-        for b_presses in range(max_presses + 1):
-            total_x = a_presses * a_x + b_presses * b_x
-            total_y = a_presses * a_y + b_presses * b_y
-            if total_x == target_x and total_y == target_y:
-                cost = a_presses * 3 + b_presses * 1
-                min_cost = min(min_cost, cost)
-    
-    return min_cost if min_cost != float('inf') else None
+    # Iterate through all possible press combinations
+    for a_presses, b_presses in product(range(max_presses + 1), repeat=2):
+        x_move = a_presses * a_x + b_presses * b_x
+        y_move = a_presses * a_y + b_presses * b_y
+
+        if x_move == target_x and y_move == target_y:
+            tokens = a_presses * 3 + b_presses * 1
+            min_tokens = min(min_tokens, tokens)
+
+    return min_tokens if min_tokens != inf else None
 
 def main():
-    """
-    Main function to process input, solve machines, and calculate results.
-    """
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Solve Day 13: Claw Contraption")
+    parser = argparse.ArgumentParser(description="Solve the claw machine puzzle.")
     parser.add_argument("-f", "--file", required=True, help="Input file path")
     args = parser.parse_args()
 
-    # Parse the input file
     machines = parse_input(args.file)
-    
-    total_cost = 0
+    total_tokens = 0
     prizes_won = 0
 
-    # Process each machine
-    for idx, machine in enumerate(machines):
-        a_move = machine["A"]
-        b_move = machine["B"]
-        prize = machine["Prize"]
-        
-        min_cost = solve_machine(a_move, b_move, prize)
-        if min_cost is not None:
+    for i, (a_button, b_button, prize) in enumerate(machines):
+        min_tokens = solve_machine(a_button, b_button, prize)
+        if min_tokens is not None:
             prizes_won += 1
-            total_cost += min_cost
-            print(f"Machine {idx + 1}: Prize won with cost {min_cost}")
+            total_tokens += min_tokens
+            print(f"Machine {i+1}: Prize won with {min_tokens} tokens.")
         else:
-            print(f"Machine {idx + 1}: No solution found")
-    
-    print("\nSummary:")
-    print(f"Prizes Won: {prizes_won}")
-    print(f"Total Cost: {total_cost}")
+            print(f"Machine {i+1}: Prize cannot be won.")
+
+    print(f"\nTotal prizes won: {prizes_won}")
+    print(f"Minimum total tokens spent: {total_tokens}")
 
 if __name__ == "__main__":
     main()
